@@ -14,7 +14,8 @@ import {
   Send, 
   Mic, 
   Sparkles,
-  Music
+  Camera,
+  User
 } from "lucide-react";
 import FloatingHearts from "./components/FloatingHearts";
 import TypewriterText from "./components/TypewriterText";
@@ -47,27 +48,51 @@ export default function App() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
   const [isEntered, setIsEntered] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>("https://chxwuynaxbiuiuiytjyi.supabase.co/storage/v1/object/public/avatars/Screenshot_20260428_140037_WhatsAppBusiness.jpg");
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
-    audioRef.current = document.getElementById('bg-music') as HTMLAudioElement;
-    if (audioRef.current) {
-      audioRef.current.src = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-      audioRef.current.volume = 0.2;
+    if (isEntered) {
+      loadAvatar();
     }
-  }, []);
+  }, [isEntered]);
+
+  const loadAvatar = async () => {
+    try {
+      const { data } = supabase.storage.from('avatars').getPublicUrl('avatar.png');
+      // Only set if we get a result, otherwise keep the default
+      if (data && data.publicUrl && !data.publicUrl.endsWith('avatar.png')) {
+        setAvatarUrl(`${data.publicUrl}?t=${Date.now()}`);
+      }
+    } catch (e) {
+      console.warn("Avatar load fail:", e);
+    }
+  };
+
+  const handleImageUpload = async (e: any) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const { error } = await supabase.storage
+        .from('avatars')
+        .upload('avatar.png', file, { upsert: true });
+
+      if (error) throw error;
+      loadAvatar();
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Note: Please make sure a public bucket named 'avatars' exists in your Supabase storage.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleEnter = () => {
     setIsEntered(true);
-    // Start music
-    if (audioRef.current) {
-      audioRef.current.play().catch(console.error);
-      setIsMusicPlaying(true);
-    }
     // Start auto-reading the text
     handleTTS(currentLines.join(" "));
     // Load chat history after entering
@@ -99,16 +124,6 @@ export default function App() {
     }
   };
 
-  const toggleMusic = () => {
-    if (!audioRef.current) return;
-    if (isMusicPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play().catch(console.error);
-    }
-    setIsMusicPlaying(!isMusicPlaying);
-  };
-
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
@@ -137,7 +152,7 @@ export default function App() {
       }
 
       setIsPlaying(true);
-      const base64 = await generateSpeech(text, "Kore", overrideStyle || currentStyle);
+      const base64 = await generateSpeech(text, "Puck", overrideStyle || currentStyle);
       if (base64) {
         await playPCM(base64);
       }
@@ -260,14 +275,6 @@ export default function App() {
       {/* Header controls */}
       <div className="absolute top-6 right-6 flex items-center gap-4 z-50">
         <button 
-          onClick={toggleMusic}
-          className={`glass-morphism p-3 rounded-full hover:bg-white/10 transition-all text-pink-300 ${isMusicPlaying ? "animate-spin-slow" : ""}`}
-          title="Toggle Music"
-        >
-          <Music size={20} className={isMusicPlaying ? "text-pink-500" : ""} />
-        </button>
-
-        <button 
           onClick={toggleLanguage}
           className="glass-morphism p-3 rounded-full hover:bg-white/10 transition-all text-pink-300 flex items-center gap-2 group"
           title="Translate"
@@ -286,7 +293,55 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-4xl w-full flex flex-col items-center justify-center text-center space-y-16 z-10">
+      <main className="max-w-4xl w-full flex flex-col items-center justify-center text-center space-y-16 z-10 pt-20 pb-20">
+        
+        {/* Circular Profile Image Container */}
+        <motion.div 
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.8, type: "spring" }}
+          className="relative group mb-4"
+        >
+          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-2 border-pink-500/30 p-1 glass-morphism overflow-hidden relative">
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt="Profile" 
+                className="w-full h-full object-cover rounded-full"
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarUrl(null)}
+              />
+            ) : (
+              <div className="w-full h-full bg-pink-500/10 flex items-center justify-center rounded-full">
+                <User className="text-pink-300 w-12 h-12" />
+              </div>
+            )}
+            
+            <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+              <Camera className="text-white w-8 h-8" />
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                className="hidden" 
+              />
+            </label>
+            
+            {isUploading && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-pink-500 border-t-transparent" />
+              </div>
+            )}
+          </div>
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className="absolute -bottom-2 -right-2 bg-pink-500 p-2 rounded-full shadow-lg shadow-pink-500/50"
+          >
+            <Heart size={14} fill="currentColor" className="text-white" />
+          </motion.div>
+        </motion.div>
+
         <AnimatePresence>
           {isLoaded && (
             <motion.div
@@ -523,9 +578,8 @@ export default function App() {
       </AnimatePresence>
 
       {/* Background Ambience */}
-      <div className="fixed bottom-6 left-6 text-pink-500/20 flex items-center gap-2">
-        <Music size={16} />
-        <span className="text-[10px] uppercase tracking-tighter">Romantic Ambience Active</span>
+      <div className="fixed bottom-6 left-6 text-pink-500/10 flex items-center gap-2">
+        <span className="text-[10px] uppercase tracking-tighter">Romantic Tribute for Al Noor</span>
       </div>
     </div>
   );

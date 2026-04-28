@@ -19,18 +19,18 @@ export const translateText = async (text: string, targetLanguage: string = "Arab
   }
 };
 
-export const generateSpeech = async (text: string, voiceName: string = "Kore", style: string = "emotional") => {
+export const generateSpeech = async (text: string, voiceName: string = "Puck", style: string = "emotional") => {
   try {
     // We can't change the physical voice waveform style directly in the current TTS API beyond voiceName,
     // but we can prompt Gemini to structure the text/prosody if it were generating SSML (future support).
     // For now, we select the best matching prebuilt voice for the style.
     
-    // Voice mapping logic
+    // Voice mapping logic for a young/attractive male persona
     let selectedVoice = voiceName;
-    if (style === "news") selectedVoice = "Puck"; // More authoritative
-    if (style === "singing") selectedVoice = "Zephyr"; // Lighter
-    if (style === "emotional") selectedVoice = "Kore"; // Soft/Gentle
-    if (style === "breathing") selectedVoice = "Charon"; // Deeper
+    if (style === "news") selectedVoice = "Puck"; // Energetic, young
+    if (style === "singing") selectedVoice = "Zephyr"; // Lighter, melodic
+    if (style === "emotional") selectedVoice = "Puck"; // Gentle version
+    if (style === "breathing") selectedVoice = "Charon"; // Deeper/Intimate
 
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-tts-preview",
