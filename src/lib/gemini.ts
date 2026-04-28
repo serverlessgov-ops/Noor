@@ -1,6 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getApiKey = () => {
+  return import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : '');
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export const translateText = async (text: string, targetLanguage: string = "Arabic") => {
   try {

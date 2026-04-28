@@ -59,7 +59,6 @@ export default function App() {
       audioRef.current.src = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
       audioRef.current.volume = 0.2;
     }
-    loadChatHistory();
   }, []);
 
   const handleEnter = () => {
@@ -71,6 +70,8 @@ export default function App() {
     }
     // Start auto-reading the text
     handleTTS(currentLines.join(" "));
+    // Load chat history after entering
+    loadChatHistory();
   };
 
   const loadChatHistory = async () => {
